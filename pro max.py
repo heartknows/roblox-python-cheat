@@ -473,8 +473,8 @@ def viewport_resize_callback():
 def title_changer():
     while True:
         try:
-            dpg.configure_item("Primary Window", label="trust-external")
-            dpg.set_viewport_title("trust-external")
+            dpg.configure_item("Primary Window", label="vanilla")
+            dpg.set_viewport_title("vanilla")
             viewport_resize_callback()
         except:
             pass
@@ -493,7 +493,7 @@ def external_toggle_listener():
                 if gui_visible:
                     dpg.show_viewport()
                     
-                    hwnd = windll.user32.FindWindowW(None, "trust External")
+                    hwnd = windll.user32.FindWindowW(None, "vanilla")
                     if hwnd:
                         windll.user32.ShowWindow(hwnd, 9) 
                         windll.user32.SetForegroundWindow(hwnd)
@@ -2015,16 +2015,7 @@ def windows_open_file_dialog():
         return None
 
 def save_config_callback():
-    global aimbot_enabled, aimbot_keybind, aimbot_mode, aimbot_hitpart, aimbot_ignoreteam, aimbot_ignoredead
-    global aimbot_prediction_enabled, aimbot_prediction_x, aimbot_prediction_y
-    global aimbot_smoothness_enabled, aimbot_smoothness_x, aimbot_smoothness_y
-    global aimbot_shake_enabled, aimbot_shake_strength, aimbot_fov, aimbot_type
-    global triggerbot_enabled, triggerbot_keybind, triggerbot_mode, triggerbot_delay
-    global triggerbot_prediction_x, triggerbot_prediction_y, triggerbot_fov, triggerbot_detection_mode, triggerbot_wallcheck_enabled
-    global walkspeed_gui_enabled, walkspeed_gui_value
-    global rotation_360_enabled, rotation_360_keybind, rotation_360_speed
-    global fly_enabled, fly_keybind, fly_mode, fly_speed, fly_method
-    global esp_enabled, esp_team_check, esp_death_check, esp_tracers_enabled
+    # Собираем все глобальные переменные для сохранения
     try:
         file_path = windows_save_file_dialog()
         if file_path:
@@ -2037,21 +2028,15 @@ def save_config_callback():
                     "ignoreteam": aimbot_ignoreteam,
                     "ignoredead": aimbot_ignoredead,
                     "fov": float(aimbot_fov),
-                    "type": aimbot_type
-                },
-                "prediction": {
-                    "enabled": aimbot_prediction_enabled,
-                    "x": float(aimbot_prediction_x),
-                    "y": float(aimbot_prediction_y)
-                },
-                "smoothness": {
-                    "enabled": aimbot_smoothness_enabled,
-                    "x": float(aimbot_smoothness_x),
-                    "y": float(aimbot_smoothness_y)
-                },
-                "shake": {
-                    "enabled": aimbot_shake_enabled,
-                    "strength": float(aimbot_shake_strength)
+                    "type": aimbot_type,
+                    "smoothness_enabled": aimbot_smoothness_enabled,
+                    "smoothness_x": float(aimbot_smoothness_x),
+                    "smoothness_y": float(aimbot_smoothness_y),
+                    "prediction_enabled": aimbot_prediction_enabled,
+                    "prediction_x": float(aimbot_prediction_x),
+                    "prediction_y": float(aimbot_prediction_y),
+                    "shake_enabled": aimbot_shake_enabled,
+                    "shake_strength": float(aimbot_shake_strength)
                 },
                 "triggerbot": {
                     "enabled": triggerbot_enabled,
@@ -2064,34 +2049,33 @@ def save_config_callback():
                     "detection_mode": triggerbot_detection_mode,
                     "wallcheck": triggerbot_wallcheck_enabled
                 },
-                "walkspeed": {
-                    "enabled": walkspeed_gui_enabled,
-                    "value": float(walkspeed_gui_value)
-                },
-                "rotation_360": {
-                    "enabled": rotation_360_enabled,
-                    "keybind": rotation_360_keybind,
-                    "speed": float(rotation_360_speed),
-                    "mode": rotation_360_mode,
-                    "direction_mode": rotation_360_direction_mode
-                },
-                "fly": {
-                    "enabled": fly_enabled,
-                    "keybind": fly_keybind,
-                    "mode": fly_mode,
-                    "speed": float(fly_speed),
-                    "method": fly_method
-                },
-                "esp": {
+                "visuals": {
                     "enabled": esp_enabled,
                     "team_check": esp_team_check,
                     "death_check": esp_death_check,
-                    "tracers": esp_tracers_enabled
+                    "tracers": esp_tracers_enabled,
+                    "box": esp_box_enabled
+                },
+                "movement": {
+                    "walkspeed_enabled": walkspeed_gui_enabled,
+                    "walkspeed_value": float(walkspeed_gui_value),
+                    "fly_enabled": fly_enabled,
+                    "fly_keybind": fly_keybind,
+                    "fly_mode": fly_mode,
+                    "fly_speed": float(fly_speed),
+                    "fly_method": fly_method
+                },
+                "misc": {
+                    "rotation_360_enabled": rotation_360_enabled,
+                    "rotation_360_keybind": rotation_360_keybind,
+                    "rotation_360_speed": float(rotation_360_speed),
+                    "rotation_360_mode": rotation_360_mode,
+                    "rotation_360_direction": rotation_360_direction_mode
                 }
             }
             with open(file_path, 'w') as f:
-                json.dump(config_data, f, indent=4, sort_keys=True)
-            print(f"Config saved to: {file_path}")
+                json.dump(config_data, f, indent=4)
+            print(f"Config saved: {file_path}")
             dpg.configure_item("config_listbox", items=get_config_files())
     except Exception as e:
         print(f"Error saving config: {e}")
@@ -2104,126 +2088,108 @@ def load_config_callback():
     global triggerbot_enabled, triggerbot_keybind, triggerbot_mode, triggerbot_delay
     global triggerbot_prediction_x, triggerbot_prediction_y, triggerbot_fov, triggerbot_detection_mode, triggerbot_wallcheck_enabled
     global walkspeed_gui_enabled, walkspeed_gui_value
-    global rotation_360_enabled, rotation_360_keybind, rotation_360_speed
+    global rotation_360_enabled, rotation_360_keybind, rotation_360_speed, rotation_360_mode, rotation_360_direction_mode
     global fly_enabled, fly_keybind, fly_mode, fly_speed, fly_method
-    global esp_enabled, esp_team_check, esp_death_check, esp_tracers_enabled
+    global esp_enabled, esp_team_check, esp_death_check, esp_tracers_enabled, esp_box_enabled
+
     selected_config = dpg.get_value("config_listbox")
-    if selected_config:
-        file_path = os.path.join(get_configs_directory(), selected_config)
-        try:
-            with open(file_path, 'r') as f:
-                config_data = json.load(f)
-            if "aimbot" in config_data:
-                aimbot_config = config_data["aimbot"]
-                aimbot_enabled = aimbot_config.get("enabled", aimbot_enabled)
-                aimbot_keybind = aimbot_config.get("keybind", aimbot_keybind)
-                aimbot_mode = aimbot_config.get("mode", aimbot_mode)
-                aimbot_hitpart = aimbot_config.get("hitpart", aimbot_hitpart)
-                aimbot_ignoreteam = aimbot_config.get("ignoreteam", aimbot_ignoreteam)
-                aimbot_ignoredead = aimbot_config.get("ignoredead", aimbot_ignoredead)
-                aimbot_fov = float(aimbot_config.get("fov", aimbot_fov))
-                aimbot_type = aimbot_config.get("type", aimbot_type)
-                dpg.set_value("aimbot_checkbox", aimbot_enabled)
-                dpg.configure_item("keybind_button", label=f"{get_key_name(aimbot_keybind)} ({aimbot_mode})")
-                dpg.set_value("aimbot_hitpart_combo", aimbot_hitpart)
-                dpg.set_value("aimbot_ignoreteam_checkbox", aimbot_ignoreteam)
-                dpg.set_value("aimbot_ignoredead_checkbox", aimbot_ignoredead)
-                dpg.set_value("aimbot_fov_slider", aimbot_fov)
-                dpg.set_value("aimbot_type_combo", aimbot_type)
-            if "prediction" in config_data:
-                prediction_config = config_data["prediction"]
-                aimbot_prediction_enabled = prediction_config.get("enabled", aimbot_prediction_enabled)
-                aimbot_prediction_x = float(prediction_config.get("x", aimbot_prediction_x))
-                aimbot_prediction_y = float(prediction_config.get("y", aimbot_prediction_y))
-                dpg.set_value("aimbot_prediction_checkbox", aimbot_prediction_enabled)
-                dpg.configure_item("prediction_x_slider", show=aimbot_prediction_enabled)
-                dpg.configure_item("prediction_y_slider", show=aimbot_prediction_enabled)
-                slider_x = 1 + (aimbot_prediction_x - 0.01) / 0.01
-                slider_y = 1 + (aimbot_prediction_y - 0.01) / 0.01
-                dpg.set_value("prediction_x_slider", slider_x)
-                dpg.set_value("prediction_y_slider", slider_y)
-            if "smoothness" in config_data:
-                smoothness_config = config_data["smoothness"]
-                aimbot_smoothness_enabled = smoothness_config.get("enabled", aimbot_smoothness_enabled)
-                aimbot_smoothness_x = float(smoothness_config.get("x", aimbot_smoothness_x))
-                aimbot_smoothness_y = float(smoothness_config.get("y", aimbot_smoothness_y))
-                dpg.set_value("aimbot_smoothness_checkbox", aimbot_smoothness_enabled)
-                dpg.configure_item("smoothness_x_slider", show=aimbot_smoothness_enabled)
-                dpg.configure_item("smoothness_y_slider", show=aimbot_smoothness_enabled)
-                dpg.set_value("smoothness_x_slider", aimbot_smoothness_x)
-                dpg.set_value("smoothness_y_slider", aimbot_smoothness_y)
-            if "shake" in config_data:
-                shake_config = config_data["shake"]
-                aimbot_shake_enabled = shake_config.get("enabled", aimbot_shake_enabled)
-                aimbot_shake_strength = float(shake_config.get("strength", aimbot_shake_strength))
-                dpg.set_value("aimbot_shake_checkbox", aimbot_shake_enabled)
-                dpg.configure_item("aimbot_shake_slider", show=aimbot_shake_enabled)
-                dpg.set_value("aimbot_shake_slider", aimbot_shake_strength)
-            if "triggerbot" in config_data:
-                triggerbot_config = config_data["triggerbot"]
-                triggerbot_enabled = triggerbot_config.get("enabled", triggerbot_enabled)
-                triggerbot_keybind = triggerbot_config.get("keybind", triggerbot_keybind)
-                triggerbot_mode = triggerbot_config.get("mode", triggerbot_mode)
-                triggerbot_delay = int(triggerbot_config.get("delay", triggerbot_delay))
-                triggerbot_prediction_x = float(triggerbot_config.get("prediction_x", triggerbot_prediction_x))
-                triggerbot_prediction_y = float(triggerbot_config.get("prediction_y", triggerbot_prediction_y))
-                triggerbot_fov = float(triggerbot_config.get("fov", triggerbot_fov))
-                triggerbot_detection_mode = triggerbot_config.get("detection_mode", triggerbot_detection_mode)
-                triggerbot_wallcheck_enabled = triggerbot_config.get("wallcheck", triggerbot_wallcheck_enabled)
-                dpg.set_value("triggerbot_checkbox", triggerbot_enabled)
-                dpg.configure_item("triggerbot_keybind_button", label=f"{get_key_name(triggerbot_keybind)} ({triggerbot_mode})")
-                dpg.set_value("triggerbot_delay_slider", triggerbot_delay)
-                dpg.set_value("triggerbot_prediction_x_slider", triggerbot_prediction_x)
-                dpg.set_value("triggerbot_prediction_y_slider", triggerbot_prediction_y)
-                dpg.set_value("triggerbot_fov_slider", triggerbot_fov)
-                dpg.set_value("triggerbot_detection_mode_combo", triggerbot_detection_mode)
-                dpg.set_value("triggerbot_wallcheck_checkbox", triggerbot_wallcheck_enabled)
-            if "walkspeed" in config_data:
-                walkspeed_config = config_data["walkspeed"]
-                walkspeed_gui_enabled = walkspeed_config.get("enabled", walkspeed_gui_enabled)
-                walkspeed_gui_value = float(walkspeed_config.get("value", walkspeed_gui_value))
-                dpg.set_value("walkspeed_gui_checkbox", walkspeed_gui_enabled)
-                dpg.configure_item("walkspeed_gui_slider", show=walkspeed_gui_enabled)
-                dpg.set_value("walkspeed_gui_slider", walkspeed_gui_value)
-            if "rotation_360" in config_data:
-                rotation_config = config_data["rotation_360"]
-                rotation_360_enabled = rotation_config.get("enabled", rotation_360_enabled)
-                rotation_360_keybind = rotation_config.get("keybind", rotation_360_keybind)
-                rotation_360_speed = float(rotation_config.get("speed", rotation_360_speed))
-                rotation_360_mode = rotation_config.get("mode", rotation_360_mode)
-                rotation_360_direction_mode = rotation_config.get("direction_mode", rotation_360_direction_mode)
-                dpg.set_value("rotation_360_checkbox", rotation_360_enabled)
-                dpg.configure_item("rotation_360_keybind_button", label=f"{get_key_name(rotation_360_keybind)} ({rotation_360_mode})")
-                dpg.set_value("rotation_360_speed_slider", rotation_360_speed)
-                dpg.set_value("rotation_360_mode_combo", rotation_360_mode)
-                dpg.set_value("rotation_360_direction_combo", rotation_360_direction_mode)
-            if "fly" in config_data:
-                fly_config = config_data["fly"]
-                fly_enabled = fly_config.get("enabled", fly_enabled)
-                fly_keybind = fly_config.get("keybind", fly_keybind)
-                fly_mode = fly_config.get("mode", fly_mode)
-                fly_speed = float(fly_config.get("speed", fly_speed))
-                fly_method = fly_config.get("method", fly_method)
-                dpg.set_value("fly_checkbox", fly_enabled)
-                dpg.configure_item("fly_keybind_button", label=f"{get_key_name(fly_keybind)} ({fly_mode})")
-                dpg.set_value("fly_speed_slider", fly_speed)
-                dpg.set_value("fly_method_combo", "Position" if fly_method == 0 else "Velocity")
-            if "esp" in config_data:
-                esp_config = config_data["esp"]
-                esp_enabled = esp_config.get("enabled", esp_enabled)
-                esp_team_check = esp_config.get("team_check", esp_team_check)
-                esp_death_check = esp_config.get("death_check", esp_death_check)
-                esp_tracers_enabled = esp_config.get("tracers", esp_tracers_enabled)
-                esp_box_enabled = esp_config.get("box", esp_box_enabled)
-                dpg.set_value("Visuals_checkbox", esp_enabled)
-                dpg.set_value("Visuals_ignoreteam_checkbox", esp_team_check)
-                dpg.set_value("Visuals_ignoredead_checkbox", esp_death_check)
-                dpg.set_value("esp_tracers_checkbox", esp_tracers_enabled)
-                dpg.set_value("esp_box_checkbox", esp_box_enabled)
-            print(f"Config loaded from: {file_path}")
-            dpg.configure_item("config_listbox", items=get_config_files())
-        except Exception as e:
-            print(f"Error loading config: {e}")
+    if not selected_config: return
+    
+    file_path = os.path.join(get_configs_directory(), selected_config)
+    try:
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+
+        # --- Aimbot ---
+        aim = data.get("aimbot", {})
+        aimbot_enabled = aim.get("enabled", False)
+        aimbot_keybind = aim.get("keybind", 0)
+        aimbot_mode = aim.get("mode", "Hold")
+        aimbot_hitpart = aim.get("hitpart", "Head")
+        aimbot_ignoreteam = aim.get("ignoreteam", False)
+        aimbot_ignoredead = aim.get("ignoredead", False)
+        aimbot_fov = aim.get("fov", 2000.0)
+        aimbot_type = aim.get("type", "Camera")
+        aimbot_smoothness_enabled = aim.get("smoothness_enabled", False)
+        aimbot_smoothness_x = aim.get("smoothness_x", 3.5)
+        aimbot_smoothness_y = aim.get("smoothness_y", 3.5)
+        aimbot_prediction_enabled = aim.get("prediction_enabled", False)
+        aimbot_prediction_x = aim.get("prediction_x", 0.01)
+        aimbot_prediction_y = aim.get("prediction_y", 0.01)
+        aimbot_shake_enabled = aim.get("shake_enabled", False)
+        aimbot_shake_strength = aim.get("shake_strength", 0.005)
+
+        # --- Triggerbot ---
+        trig = data.get("triggerbot", {})
+        triggerbot_enabled = trig.get("enabled", False)
+        triggerbot_keybind = trig.get("keybind", 1)
+        triggerbot_mode = trig.get("mode", "Hold")
+        triggerbot_delay = trig.get("delay", 0)
+        triggerbot_prediction_x = trig.get("prediction_x", 0.0)
+        triggerbot_prediction_y = trig.get("prediction_y", 0.0)
+        triggerbot_fov = trig.get("fov", 50.0)
+        triggerbot_detection_mode = trig.get("detection_mode", "Default")
+        triggerbot_wallcheck_enabled = trig.get("wallcheck", False)
+
+        # --- Visuals ---
+        vis = data.get("visuals", {})
+        esp_enabled = vis.get("enabled", False)
+        esp_team_check = vis.get("team_check", False)
+        esp_death_check = vis.get("death_check", False)
+        esp_tracers_enabled = vis.get("tracers", False)
+        esp_box_enabled = vis.get("box", False)
+
+        # --- Movement ---
+        mov = data.get("movement", {})
+        walkspeed_gui_enabled = mov.get("walkspeed_enabled", False)
+        walkspeed_gui_value = mov.get("walkspeed_value", 16.0)
+        fly_enabled = mov.get("fly_enabled", False)
+        fly_keybind = mov.get("fly_keybind", 81)
+        fly_mode = mov.get("fly_mode", "Hold")
+        fly_speed = mov.get("fly_speed", 60.0)
+        fly_method = mov.get("fly_method", 1)
+
+        # --- Misc ---
+        msc = data.get("misc", {})
+        rotation_360_enabled = msc.get("rotation_360_enabled", False)
+        rotation_360_keybind = msc.get("rotation_360_keybind", 0)
+        rotation_360_speed = msc.get("rotation_360_speed", 1.0)
+        rotation_360_mode = msc.get("rotation_360_mode", "Hold")
+        rotation_360_direction_mode = msc.get("rotation_360_direction", "Mode 1 (Default)")
+
+        # --- ОБНОВЛЕНИЕ GUI ЭЛЕМЕНТОВ ---
+        dpg.set_value("aimbot_checkbox", aimbot_enabled)
+        dpg.configure_item("keybind_button", label=f"{get_key_name(aimbot_keybind)} ({aimbot_mode})")
+        dpg.set_value("aimbot_hitpart_combo", aimbot_hitpart)
+        dpg.set_value("aimbot_fov_slider", aimbot_fov)
+        dpg.set_value("aimbot_type_combo", aimbot_type)
+        dpg.set_value("aimbot_smoothness_checkbox", aimbot_smoothness_enabled)
+        dpg.set_value("smoothness_x_slider", aimbot_smoothness_x)
+        dpg.set_value("smoothness_y_slider", aimbot_smoothness_y)
+        dpg.set_value("aimbot_prediction_checkbox", aimbot_prediction_enabled)
+        dpg.set_value("aimbot_shake_checkbox", aimbot_shake_enabled)
+        
+        dpg.set_value("triggerbot_checkbox", triggerbot_enabled)
+        dpg.configure_item("triggerbot_keybind_button", label=f"{get_key_name(triggerbot_keybind)} ({triggerbot_mode})")
+        dpg.set_value("triggerbot_delay_slider", triggerbot_delay)
+        dpg.set_value("triggerbot_fov_slider", triggerbot_fov)
+        
+        dpg.set_value("Visuals_checkbox", esp_enabled)
+        dpg.set_value("esp_tracers_checkbox", esp_tracers_enabled)
+        dpg.set_value("esp_box_checkbox", esp_box_enabled)
+        
+        dpg.set_value("walkspeed_gui_checkbox", walkspeed_gui_enabled)
+        dpg.set_value("walkspeed_gui_slider", walkspeed_gui_value)
+        dpg.set_value("fly_checkbox", fly_enabled)
+        dpg.configure_item("fly_keybind_button", label=f"{get_key_name(fly_keybind)} ({fly_mode})")
+        
+        dpg.set_value("rotation_360_checkbox", rotation_360_enabled)
+        dpg.configure_item("rotation_360_keybind_button", label=f"{get_key_name(rotation_360_keybind)} ({rotation_360_mode})")
+
+        print(f"Config loaded successfully: {selected_config}")
+
+    except Exception as e:
+        print(f"Error loading config: {e}")
 
 def delete_config_callback():
     selected_config = dpg.get_value("config_listbox")
@@ -2355,7 +2321,7 @@ if __name__ == "__main__":
     success_theme = setup_success_button_theme()
     group_theme = setup_group_theme()
 
-    with dpg.window(label="trust External", tag="Injector Window", width=800, height=700, no_resize=True):
+    with dpg.window(label="vanilla", tag="Injector Window", width=620, height=570, no_resize=True):
         dpg.add_spacer(height=40)
         
         with dpg.child_window(height=100, border=False):
@@ -2364,16 +2330,16 @@ if __name__ == "__main__":
             
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=100)  
-                dpg.add_text("trust External", color=(130, 100, 200, 255))
+                dpg.add_text("injector", color=(130, 100, 200, 255))
             
             dpg.add_spacer(height=15)
             
             with dpg.group(horizontal=True):
                 dpg.add_spacer(width=100) 
-                dpg.add_button(label="INJECT", callback=init, tag="inject_button", width=150, height=45)
+                dpg.add_button(label="INJECT", callback=init, tag="inject_button", width=100, height=20)
                 dpg.bind_item_theme(dpg.last_item(), accent_theme)
 
-    with dpg.window(label="trust External", tag="Primary Window", width=800, height=650, show=False, no_resize=True, no_move=True, no_collapse=True, pos=[0, 0]):
+    with dpg.window(label="vanilla", tag="Primary Window", width=600, height=550, show=False, no_resize=True, no_move=True, no_collapse=True, pos=[0, 0]):
         with dpg.tab_bar():
             with dpg.tab(label="Aimbot"):
                 dpg.add_spacer(height=10)
@@ -2527,11 +2493,12 @@ if __name__ == "__main__":
                 dpg.bind_item_theme(dpg.last_item(), accent_theme)
                 
                 dpg.add_spacer(height=15)
-                dpg.add_listbox(items=get_config_files(), tag="config_listbox", width=350, num_items=8)
+                dpg.add_listbox(items=get_config_files(), tag="config_listbox", width=150, num_items=8)
+                dpg.add_text("made by vovchik", color=(255, 255, 255, 255))
 
     dpg.bind_theme(global_theme)
     
-    dpg.create_viewport(title="trust External", width=820, height=670, resizable=False, decorated=False)
+    dpg.create_viewport(title="vanilla", width=620, height=570, resizable=False, decorated=False)
     dpg.setup_dearpygui()
     dpg.show_viewport()
     
